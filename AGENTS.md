@@ -6,14 +6,14 @@ Guidance for AI coding agents working in this repository.
 
 `doccum` (`@itzemoji/doccum` on npm) is a TypeScript CLI for managing, building
 and deploying multiple documentation projects from one place. It is in early
-development — `src/cli.ts` currently only handles `--help` and `--version`.
+development — the only command so far is `doccum sync`.
 
-### In progress: `doccum sync` (design phase)
+### `doccum sync`
 
-Status: part 1 of the design (command + structure) and the terminal UI
-approach are **approved**. The user asked to go straight to implementation;
-parts 2–4 (PR/comment/auto-merge details, error handling, testing) are being
-decided during implementation and recorded below for review.
+Status: **implemented**. Part 1 of the design (command + structure) and the
+terminal UI were approved; the user then asked to go straight to
+implementation, so parts 2–4 were decided during implementation (see "Decided
+during implementation" below) and still await the user's review.
 
 #### Terminal UI (approved)
 
@@ -95,6 +95,28 @@ doccum sync \
 | `sync/pr.ts`       | Octokit (`@octokit/rest`): find/open PR, upsert comment, auto-merge |
 | `sync/errors.ts`   | map Octokit/network errors to readable messages + exit codes        |
 
+#### Decided during implementation (parts 2–4, pending user review)
+
+- **PR**: reuse the open PR from `<branch>` into `--base`, otherwise open one
+  titled with the first line of the central commit message.
+- **Preview comment**: the marker is per project, `<!-- doccum-preview:<project> -->`,
+  so projects sharing a branch/PR each keep their own comment.
+- **Auto-merge**: GraphQL `enablePullRequestAutoMerge`. If GitHub says
+  auto-merge isn't allowed, or the PR is in clean/unstable status (nothing to
+  wait for), merge directly via REST with `--merge-method`. Any other error
+  fails.
+- **Mirror**: `git init` + shallow fetch of the branch (or `--base` if the
+  branch is new), replace `<dest>/` (never copying `.git`), commit as
+  `github-actions[bot]`, push. The token goes in the HTTPS clone URL and is
+  redacted from every error. `--branch` must differ from `--base`.
+- **Environment**: `GITHUB_TOKEN` (required), plus the standard Actions
+  variables `GITHUB_API_URL` and `GITHUB_SERVER_URL` (GitHub Enterprise works).
+- **Exit codes**: 0 ok, 1 unexpected, 2 usage, 3 git, 4 GitHub/network. Every
+  error is printed through `ui.fail` with a hint — no unhandled crashes.
+- **Tests** (`bun test`, in `test/`): mirror runs real git against a local
+  bare repo with an isolated git config; `pr.ts` and the full command run real
+  Octokit against an in-memory fake GitHub (`test/fake-github.ts`, `Bun.serve`).
+
 ## Tooling
 
 - Package manager / runner: **Bun** (`bun install`, `bun run <script>`).
@@ -106,7 +128,7 @@ doccum sync \
   `verbatimModuleSyntax` — use `import type` for type-only imports and `.js`
   extensions in relative imports.
 
-Before finishing a change, run `bun run typecheck`, `bun run build` and
+Before finishing a change, run `bun test`, `bun run typecheck`, `bun run build` and
 `bun run format:check`.
 
 ## Git and release conventions
