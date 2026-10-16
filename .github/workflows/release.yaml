@@ -1,0 +1,61 @@
+name: Release
+permissions:
+  contents: read
+on:
+  push:
+    branches:
+      - main
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  # semantic-release reads the Conventional Commits since the last tag, picks
+  # the next version, publishes to npmjs.com and GitHub Packages (in that
+  # order, see .releaserc.json), then tags and creates the GitHub release.
+  release:
+    runs-on: ubuntu-latest
+    # Tagging, the GitHub release and the issue/PR comments go through the
+    # GitHub App, so github.token only needs what the App can't do.
+    permissions:
+      contents: read
+      packages: write # publish to GitHub Packages
+      # npm trusted publishing (OIDC) — no NPM_TOKEN secret, and provenance
+      # attestations are generated automatically.
+      id-token: write
+    steps:
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          # semantic-release needs the full history and tags.
+          fetch-depth: 0
+          # Otherwise the persisted github.token overrides the App token when
+          # semantic-release pushes the tag.
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      # Trusted publishing needs npm >= 11.5.1, which ships with Node 24.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      # Used by the GitHub Packages publishCmd in .releaserc.json. It's kept
+      # out of the project .npmrc so the npmjs.com publish isn't redirected.
+      - name: Configure GitHub Packages auth
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/github-packages.npmrc" <<EOF
+          @itzemoji:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          EOF
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: npx semantic-release

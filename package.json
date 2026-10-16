@@ -1,0 +1,35 @@
+{
+  "name": "@itzemoji/doccum",
+  "version": "0.0.0",
+  "description": "Manage, build and deploy multiple documentation projects from one CLI.",
+  "license": "GPL-3.0-or-later",
+  "author": "ItzEmoji",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itzemoji/doccum.git"
+  },
+  "type": "module",
+  "bin": {
+    "doccum": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepublishOnly": "bun run build"
+  },
+  "devDependencies": {
+    "@semantic-release/exec": "^7.1.0",
+    "@types/node": "^26.6.5",
+    "prettier": "^3.9.10",
+    "semantic-release": "^25.0.9",
+    "typescript": "^7.0.2"
+  }
+}
