@@ -6,7 +6,7 @@
   "author": "ItzEmoji",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/itzemoji/doccum.git"
+    "url": "git+https://github.com/ItzEmoji/doccum.git"
   },
   "type": "module",
   "bin": {
