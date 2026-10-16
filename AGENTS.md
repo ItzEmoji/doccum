@@ -10,13 +10,23 @@ development — `src/cli.ts` currently only handles `--help` and `--version`.
 
 ### In progress: `doccum sync` (design phase)
 
-Status: brainstorming (superpowers `brainstorming` skill, architectural path).
-Part 1 of the design (command + structure) is **approved**. Still to present
-and approve: part 2 (PR, comment, auto-merge details), part 3 (error
-handling), part 4 (testing). Then write the spec to
-`docs/superpowers/specs/YYYY-MM-DD-doccum-sync-design.md` (that folder is
-gitignored — local only), get it reviewed, then use `writing-plans`. No product
-code has been written yet.
+Status: part 1 of the design (command + structure) and the terminal UI
+approach are **approved**. The user asked to go straight to implementation;
+parts 2–4 (PR/comment/auto-merge details, error handling, testing) are being
+decided during implementation and recorded below for review.
+
+#### Terminal UI (approved)
+
+The whole CLI (help, version, errors, every command) uses the look of Vercel's
+`npx skills` CLI: `@clack/prompts` — a `│` gutter, `◇`/`◆` step markers,
+spinners, `┌` intro and `└` outro. In GitHub Actions (`CI=true`) clack prints
+static lines instead of animating, so the same code works locally and in CI.
+
+- `src/ui.ts` is the **only** module that imports clack. Commands call its
+  helpers (`intro`, `task`, `step`, `fail`, `outro`, help rendering) so the
+  styling stays swappable in one place.
+- Argument parsing uses the built-in `node:util` `parseArgs` (subcommands,
+  required-flag validation, per-command `--help`) — no extra dependency.
 
 #### What it does
 
@@ -78,6 +88,7 @@ doccum sync \
 | File               | Job                                                                 |
 | ------------------ | ------------------------------------------------------------------- |
 | `cli.ts`           | existing entry; routes `sync`                                       |
+| `ui.ts`            | the only clack importer: intro/task/step/fail/outro + help          |
 | `commands/sync.ts` | parse/validate flags, run the steps in order                        |
 | `sync/mirror.ts`   | git clone/branch/replace/commit/push, returns SHA                   |
 | `sync/preview.ts`  | pure `(sha, domain, project)` → URL                                 |
