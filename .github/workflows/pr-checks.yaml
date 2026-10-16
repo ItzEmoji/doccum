@@ -53,6 +53,7 @@ jobs:
           node-version: 24
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
+      - run: bun test
       - run: bun run build
       - name: Smoke-test the built CLI
         run: node dist/cli.js --version
